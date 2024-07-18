@@ -10,69 +10,47 @@ def setup_logging():
     logging.basicConfig(filename=config.get_log_file(), level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
 
-def get_last_check_time():
-    last_check_file = config.get_last_check_file()
-    if os.path.exists(last_check_file):
-        with open(last_check_file, "r") as f:
-            return datetime.fromisoformat(f.read().strip())
-    return datetime.min + timedelta(hours=24) # add 1 day to avoid overflow
-
-def update_last_check_time():
-    last_check_file = config.get_last_check_file()
-    with open(last_check_file, "w") as f:
-        f.write(datetime.now().isoformat())
-
-def should_backup_now(schedule, grace_period):
-    now = datetime.now()
+def get_prev_backup_time(schedule, now):
     cron = croniter(schedule, now)
-    prev_backup = cron.get_prev(datetime)
-    next_backup = cron.get_next(datetime)
-    return prev_backup - grace_period <= now < next_backup + grace_period
+    return cron.get_prev(datetime)
 
 def check_backups():
+    now = datetime.now()
     grace_period_minutes = config.GRACE_PERIOD_MINUTES
     grace_period = timedelta(minutes=grace_period_minutes)
-    max_age = timedelta(days=config.MAX_BACKUP_DAYS)
-    last_check = get_last_check_time()
-    now = datetime.now()
-    
-    lower_bound = max(last_check - grace_period, now - max_age)
-    upper_bound = now + grace_period
     missing_backups = []
-
     for subdir, schedule in config.BACKUP_SCHEDULES.items():
-        if not should_backup_now(schedule, grace_period):
-            logging.info(f"No backup scheduled for {subdir} at this time (including grace period).")
-            continue
-
+        prev_backup_time = get_prev_backup_time(schedule, now)
+        check_time = prev_backup_time - grace_period
         dir_path = os.path.join(config.BACKUP_DIR, subdir)
         if not os.path.exists(dir_path):
             logging.warning(f"Directory {dir_path} does not exist.")
+            missing_backups.append(subdir)
             continue
 
         backup_found = False
+        logging.info(f"Checking backup for '{subdir}'. Expected: {prev_backup_time.isoformat()}, Checking since: {check_time.isoformat()}")
         for file in os.listdir(dir_path):
             file_path = os.path.join(dir_path, file)
             if os.path.isfile(file_path):
                 file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
-                if lower_bound < file_mtime <= upper_bound:
-                    logging.info(f"Backup found for {subdir}: {file} in ({lower_bound}, {upper_bound}]")
+                if file_mtime > check_time:
+                    logging.info(f"Backup found for {subdir}: {file}")
                     backup_found = True
                     break
         
         if not backup_found:
             missing_backups.append(subdir)
-            logging.warning(f"Missing backup for {subdir} (including grace period {grace_period_minutes} minutes).")
+            logging.warning(f"Backup missing for {subdir}.")
 
-    update_last_check_time()
-    return missing_backups
+    return missing_backups, now
 
 def run():
     setup_logging()
     logging.info("Starting backup check")
-    missing_backups = check_backups()
+    missing_backups, check_time = check_backups()
     if missing_backups:
-        message = f"Missing backups for: {', '.join(missing_backups)}"
+        message = f"Detected missing backups: {', '.join(missing_backups)} on {check_time.isoformat(timespec='seconds')}"
         logging.warning(message)
         notification.send_notification(message)
     else:

@@ -15,12 +15,8 @@ def parse_arguments():
                         help="JSON file containing backup schedules (default: APP_HOME/backup_schedules.json)")
     parser.add_argument("-g", "--grace-period", 
                         type=int, 
-                        default=30, 
-                        help="Grace period in minutes (default: 30)")
-    parser.add_argument("-m", "--max-backup-days", 
-                        type=int, 
-                        default=1, 
-                        help="Maximum age of backups in days (default: 1)")
+                        default=60, 
+                        help="Grace period in minutes (default: 60)")
     return parser.parse_args()
 
 def main():

@@ -6,10 +6,9 @@ BACKUP_DIR = None
 BACKUP_SCHEDULES = None
 APP_HOME = None
 GRACE_PERIOD_MINUTES = None
-MAX_BACKUP_DAYS = None
 
 def load_config(args):
-    global TODOIST_API_KEY, BACKUP_DIR, BACKUP_SCHEDULES, APP_HOME, GRACE_PERIOD_MINUTES, MAX_BACKUP_DAYS
+    global TODOIST_API_KEY, BACKUP_DIR, BACKUP_SCHEDULES, APP_HOME, GRACE_PERIOD_MINUTES
 
     TODOIST_API_KEY = args.api_key or os.environ.get('TODOIST_API_KEY')
     if not TODOIST_API_KEY:
@@ -27,10 +26,6 @@ def load_config(args):
         BACKUP_SCHEDULES = json.load(f)
 
     GRACE_PERIOD_MINUTES = args.grace_period
-    MAX_BACKUP_DAYS = args.max_backup_days
 
 def get_log_file():
     return os.path.join(APP_HOME, 'backup_check.log')
-
-def get_last_check_file():
-    return os.path.join(APP_HOME, 'last_check')
