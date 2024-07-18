@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "checkit"
+version = "0.1.0"
+description = "A flexible monitoring system for various tasks"
+authors = ["Hui Zheng <xyz.dll@gmail.com>"]
+readme = "README.md"
+packages = [{include = "checkit"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+todoist-api-python = "^2.1.5"
+croniter = "^1.3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+checkit = "checkit.main:main"
