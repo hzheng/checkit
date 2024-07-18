@@ -1,14 +1,27 @@
 import os
 import logging
+
 from datetime import datetime, timedelta
+from logging.handlers import RotatingFileHandler
 
 from croniter import croniter
 
 from checkit.utils import config, notification
 
 def setup_logging():
-    logging.basicConfig(filename=config.get_log_file(), level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+    log_file = config.get_log_file()
+    max_log_size = 100 * 1024 * 1024  # 100 MB
+    backup_count = 10  # Number of backup files to keep
+    handler = RotatingFileHandler(
+        log_file,
+        maxBytes=max_log_size,
+        backupCount=backup_count
+    )
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
 
 def get_prev_backup_time(schedule, now):
     cron = croniter(schedule, now)

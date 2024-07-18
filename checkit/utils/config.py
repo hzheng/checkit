@@ -27,5 +27,10 @@ def load_config(args):
 
     GRACE_PERIOD_MINUTES = args.grace_period
 
+def get_log_dir():
+    log_dir = os.path.join(APP_HOME, 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
+
 def get_log_file():
-    return os.path.join(APP_HOME, 'backup_check.log')
+    return os.path.join(get_log_dir(), 'backup_check.log')
